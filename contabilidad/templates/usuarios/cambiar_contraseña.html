@@ -1,0 +1,12 @@
+<h2>Cambiar contraseña</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <label>Nueva contraseña:</label>
+    <input type="password" name="nueva_password" required class="form-control">
+
+    <label>Confirmar contraseña:</label>
+    <input type="password" name="confirmar_password" required class="form-control">
+
+    <button class="btn btn-primary mt-3">Guardar</button>
+</form>

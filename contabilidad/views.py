@@ -3,8 +3,9 @@ from django.contrib.auth.models import User, Group
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from .forms import CrearEmpleadoForm, EditarUsuarioForm, IngresoForm, EgresoForm, InventarioForm
-from .models import Ingreso, Egreso, InventarioItem
-
+from .models import Ingreso, Egreso, InventarioItem, PasswordResetRequest
+from itertools import chain
+from operator import attrgetter
 # Función de comprobación: ¿Es Administrador?
 def es_administrador(user):
     return user.groups.filter(name='Administrador').exists() or user.is_superuser
@@ -41,8 +42,11 @@ def crear_empleado(request):
 def dashboard(request):
     # Lógica simple de redirección o renderizado según rol
     usuario = request.user
-    rol = "Sin Asignar"
     
+    rol = "Sin Asignar"
+    profile = request.user.profile
+    if profile.requiere_cambio_password:
+        return redirect("cambiar_password_primera_vez")
     if usuario.groups.filter(name='Administrador').exists():
         rol = "Administrador"
         # Quizás quieras mostrar lista de empleados aquí
@@ -57,16 +61,65 @@ def dashboard(request):
 def dashboard(request):
     usuario = request.user
     
-    # Verificamos pertenencia a grupos para pasar banderas al template
+    # Banderas de Rol
     es_admin = usuario.groups.filter(name='Administrador').exists() or usuario.is_superuser
     es_contador = usuario.groups.filter(name='Contador').exists()
     es_almacenista = usuario.groups.filter(name='Almacenista').exists()
+    
+    solicitudes = None
+    historial_combinado = []
+
+    if es_admin:
+        solicitudes = PasswordResetRequest.objects.filter(atendido=False)
+
+        # Traemos los últimos 10 de cada uno
+        ingresos = Ingreso.objects.all().order_by('-fecha')[:10]
+        egresos = Egreso.objects.all().order_by('-fecha')[:10]
+        items = InventarioItem.objects.all().order_by('-fecha_ingreso')[:10]
+
+        # --- ETIQUETADO Y NORMALIZACIÓN DE DATOS ---
+        
+        for i in ingresos:
+            i.tipo_accion = 'Ingreso'
+            i.css_class = 'success'
+            i.fecha_orden = i.fecha
+            # Normalizamos para la tabla:
+            i.columna_detalle = i.descripcion  # O i.motivo, según tu modelo
+            i.columna_valor = f"+ ${i.monto}"  # Formato dinero positivo
+
+        for e in egresos:
+            e.tipo_accion = 'Egreso'
+            e.css_class = 'danger'
+            e.fecha_orden = e.fecha
+            # Normalizamos:
+            e.columna_detalle = e.descripcion 
+            e.columna_valor = f"- ${e.costo}"  # Formato dinero negativo
+
+        for it in items:
+            it.tipo_accion = 'Inventario'
+            it.css_class = 'info'
+            it.fecha_orden = it.fecha_ingreso
+            # Normalizamos:
+            it.columna_detalle = it.nombre     # El nombre del producto
+            it.columna_valor = f"{it.cantidad} un." # Formato unidades
+
+        # Combinar y Ordenar
+        historial_combinado = sorted(
+            chain(ingresos, egresos, items),
+            key=attrgetter('fecha_orden'),
+            reverse=True
+        )
+
+        # Opcional: Si solo quieres ver lo que hicieron "los demás", descomenta esto:
+        # historial_combinado = [x for x in historial_combinado if x.creado_por != request.user]
 
     context = {
         'es_admin': es_admin,
         'es_contador': es_contador,
         'es_almacenista': es_almacenista,
-        'nombre_usuario': usuario.first_name or usuario.username
+        'nombre_usuario': usuario.first_name or usuario.username,
+        'solicitudes': solicitudes,
+        'historial': historial_combinado, # <--- Pasamos la lista nueva
     }
     
     return render(request, 'dashboard.html', context)
@@ -215,3 +268,56 @@ def eliminar_usuario(request, user_id):
     return render(request, 'usuarios/eliminar_usuario.html', {
         'usuario': usuario
     })
+@login_required
+def cambiar_password_primera_vez(request):
+    if request.method == "POST":
+        nueva = request.POST.get("nueva_password")
+        confirmar = request.POST.get("confirmar_password")
+
+        if nueva != confirmar:
+            messages.error(request, "Las contraseñas no coinciden.")
+        elif len(nueva) < 6:
+            messages.error(request, "La contraseña debe tener al menos 6 caracteres.")
+        else:
+            request.user.set_password(nueva)
+            request.user.save()
+
+            request.user.profile.requiere_cambio_password = False
+            request.user.profile.save()
+
+            messages.success(request, "Contraseña cambiada con éxito. Por favor inicia sesión nuevamente.")
+            return redirect("login")
+
+    return render(request, "usuarios/cambiar_password_primera_vez.html")
+
+def solicitar_reset_password(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+
+        try:
+            usuario = User.objects.get(username=username)
+
+            PasswordResetRequest.objects.create(usuario=usuario)
+            messages.success(request, "La solicitud ha sido enviada al administrador.")
+            return redirect("login")
+
+        except User.DoesNotExist:
+            messages.error(request, "El usuario no existe.")
+
+    return render(request, "usuarios/solicitar_reset_password.html")
+
+@login_required
+def marcar_solicitud_atendida(request, solicitud_id):
+    # CORRECCIÓN: Agregamos el "not" y paréntesis
+    # Si NO es admin y NO es superusuario, entonces lo echamos.
+    if not (request.user.groups.filter(name='Administrador').exists() or request.user.is_superuser):
+        return redirect("dashboard")
+
+    # Es buena práctica usar get_object_or_404 por si la ID no existe
+    solicitud = get_object_or_404(PasswordResetRequest, id=solicitud_id)
+    
+    solicitud.atendido = True
+    solicitud.save()
+
+    messages.success(request, "Solicitud marcada como atendida.")
+    return redirect("dashboard")

@@ -83,7 +83,7 @@ class Profile(models.Model):
         null=True,
         blank=True
     )
-
+    requiere_cambio_password = models.BooleanField(default=True)
     def __str__(self):
         return f"Perfil de {self.user.username}"
 @receiver(post_save, sender=User)
@@ -95,3 +95,11 @@ def crear_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def guardar_profile(sender, instance, **kwargs):
     instance.profile.save()
+
+class PasswordResetRequest(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    atendido = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Solicitud de {self.usuario.username} ({'Atendida' if self.atendido else 'Pendiente'})"
