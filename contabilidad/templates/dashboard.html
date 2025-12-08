@@ -90,7 +90,7 @@
 
                 <td>
                     {% if mov.creado_por %}
-                        <small>{{ mov.creado_por.username }}</small>
+                        <small>{{ mov.creado_por_nombre_fijo }}</small>
                     {% else %}
                         <span class="text-muted"><small>Sistema</small></span>
                     {% endif %}
@@ -99,6 +99,11 @@
                 <td>
                     <small class="text-muted">{{ mov.fecha_orden|date:"d/m/Y" }}</small>
                 </td>
+<td>
+    <a href="{% url 'editar_movimiento' mov.tipo_accion|lower mov.id %}" class="btn btn-sm btn-warning">Editar</a>
+    <a href="{% url 'eliminar_movimiento' mov.tipo_accion|lower mov.id %}" class="btn btn-sm btn-danger">Eliminar</a>
+    
+</td>
             </tr>
             {% empty %}
             <tr>
@@ -124,7 +129,6 @@
                         <p class="card-text">Gestione el flujo de caja de la empresa.</p>
                         <div class="d-grid gap-2">
 
-                            <!-- BOTONES ACTUALIZADOS -->
                             <a href="{% url 'ingresos_page' %}" class="btn btn-outline-success">
                                 Registrar Ingreso
                             </a>
@@ -148,7 +152,6 @@
                         <p class="card-text">Control de stock y registro de nuevos artículos.</p>
                         <div class="d-grid gap-2">
 
-                            <!-- BOTONES ACTUALIZADOS -->
                             <a href="{% url 'inventario_page' %}" class="btn btn-outline-dark">
                                 Registrar Nuevo Item
                             </a>

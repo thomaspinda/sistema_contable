@@ -20,6 +20,7 @@ class Ingreso(models.Model):
         verbose_name="Tipo de Ingreso"
     )
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    creado_por_nombre_fijo = models.CharField(max_length=150, null=True, blank=True)
     cliente = models.CharField(
         max_length=100,
         blank=True,
@@ -49,6 +50,7 @@ class Egreso(models.Model):
     )
     fecha = models.DateField(auto_now_add=True)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    creado_por_nombre_fijo = models.CharField(max_length=150, null=True, blank=True)
 
     def __str__(self):
         return f"{self.titulo} - ${self.costo}"
@@ -68,6 +70,7 @@ class InventarioItem(models.Model):
     fecha_ingreso = models.DateField(auto_now_add=True)
     numero_factura = models.CharField(max_length=50)
     creado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    creado_por_nombre_fijo = models.CharField(max_length=150, null=True, blank=True)
 
     def __str__(self):
         return self.nombre

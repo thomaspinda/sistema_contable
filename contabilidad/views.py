@@ -31,7 +31,6 @@ def crear_empleado(request):
             mi_grupo = form.cleaned_data['rol']
             user.groups.add(mi_grupo)
 
-            messages.success(request, f"Empleado {user.username} creado con el rol {mi_grupo.name}")
             return redirect('dashboard') # O a la misma vista para crear otro
     else:
         form = CrearEmpleadoForm()
@@ -144,8 +143,9 @@ def ingresos_page(request):
         if form.is_valid():
             ingreso = form.save(commit=False)
             ingreso.creado_por = request.user
+            nombre_a_guardar = request.user.get_full_name() or request.user.username
+            ingreso.creado_por_nombre_fijo = nombre_a_guardar
             ingreso.save()
-            messages.success(request, 'Ingreso registrado correctamente.')
             # redirigimos a la misma vista para evitar duplicar POST (PRG)
             return redirect('ingresos_page')
         else:
@@ -172,8 +172,9 @@ def egresos_page(request):
         if form.is_valid():
             egreso = form.save(commit=False)
             egreso.creado_por = request.user
+            nombre_a_guardar = request.user.get_full_name() or request.user.username
+            egreso.creado_por_nombre_fijo = nombre_a_guardar
             egreso.save()
-            messages.success(request, 'Egreso registrado correctamente.')
             return redirect('egresos_page')
         else:
             messages.error(request, 'Corrige los errores del formulario.')
@@ -198,8 +199,9 @@ def inventario_page(request):
         if form.is_valid():
             item = form.save(commit=False)
             item.creado_por = request.user
+            nombre_a_guardar = request.user.get_full_name() or request.user.username
+            item.creado_por_nombre_fijo = nombre_a_guardar
             item.save()
-            messages.success(request, 'Artículo registrado correctamente.')
             return redirect('inventario_page')
         else:
             messages.error(request, 'Corrige los errores del formulario.')
@@ -244,7 +246,6 @@ def editar_usuario(request, user_id):
 
             user.save()
 
-            messages.success(request, "Usuario actualizado correctamente.")
             return redirect('lista_usuarios')
 
     return render(request, 'usuarios/editar_usuario.html', {
@@ -262,7 +263,6 @@ def eliminar_usuario(request, user_id):
 
     if request.method == "POST":
         usuario.delete()
-        messages.success(request, "Usuario eliminado correctamente.")
         return redirect('lista_usuarios')
 
     return render(request, 'usuarios/eliminar_usuario.html', {
@@ -285,7 +285,6 @@ def cambiar_password_primera_vez(request):
             request.user.profile.requiere_cambio_password = False
             request.user.profile.save()
 
-            messages.success(request, "Contraseña cambiada con éxito. Por favor inicia sesión nuevamente.")
             return redirect("login")
 
     return render(request, "usuarios/cambiar_password_primera_vez.html")
@@ -298,7 +297,6 @@ def solicitar_reset_password(request):
             usuario = User.objects.get(username=username)
 
             PasswordResetRequest.objects.create(usuario=usuario)
-            messages.success(request, "La solicitud ha sido enviada al administrador.")
             return redirect("login")
 
         except User.DoesNotExist:
@@ -319,5 +317,100 @@ def marcar_solicitud_atendida(request, solicitud_id):
     solicitud.atendido = True
     solicitud.save()
 
-    messages.success(request, "Solicitud marcada como atendida.")
     return redirect("dashboard")
+@login_required
+def editar_movimiento(request, movimiento_tipo, movimiento_id):
+    if not (request.user.groups.filter(name='Administrador').exists() or request.user.is_superuser):
+        return redirect('dashboard')
+
+    if movimiento_tipo == 'ingreso':
+        movimiento = get_object_or_404(Ingreso, id=movimiento_id)
+        FormClass = IngresoForm
+        template_name = 'ingresos/editar_ingreso.html'
+    elif movimiento_tipo == 'egreso':
+        movimiento = get_object_or_404(Egreso, id=movimiento_id)
+        FormClass = EgresoForm
+        template_name = 'egresos/editar_egreso.html'
+    elif movimiento_tipo == 'inventario':
+        movimiento = get_object_or_404(InventarioItem, id=movimiento_id)
+        FormClass = InventarioForm
+        template_name = 'inventario/editar_item.html'
+    else:
+        messages.error(request, "Tipo de movimiento inválido.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = FormClass(request.POST, instance=movimiento)
+        if form.is_valid():
+            form.save()
+            return redirect('dashboard')
+        else:
+            messages.error(request, "Corrige los errores del formulario.")
+    else:
+        form = FormClass(instance=movimiento)
+
+    return render(request, template_name, {
+        'form': form,
+        'movimiento': movimiento
+    })
+@login_required
+def eliminar_movimiento(request, movimiento_tipo, movimiento_id):
+    if not (request.user.groups.filter(name='Administrador').exists() or request.user.is_superuser):
+        return redirect('dashboard')
+
+    if movimiento_tipo == 'ingreso':
+        movimiento = get_object_or_404(Ingreso, id=movimiento_id)
+        template_name = 'ingresos/eliminar_ingreso.html'
+    elif movimiento_tipo == 'egreso':
+        movimiento = get_object_or_404(Egreso, id=movimiento_id)
+        template_name = 'egresos/eliminar_egreso.html'
+    elif movimiento_tipo == 'inventario':
+        movimiento = get_object_or_404(InventarioItem, id=movimiento_id)
+        template_name = 'inventario/eliminar_item.html'
+    else:
+        messages.error(request, "Tipo de movimiento inválido.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        movimiento.delete()
+        return redirect('dashboard')
+
+    return render(request, template_name, {
+        'movimiento': movimiento
+    })
+@login_required
+def editar_item_inventario(request, item_id):
+    if not (request.user.groups.filter(name='Administrador').exists() or request.user.is_superuser):
+        return redirect('dashboard')
+
+    item = get_object_or_404(InventarioItem, id=item_id)
+
+    if request.method == 'POST':
+        form = InventarioForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Artículo de inventario actualizado correctamente.")
+            return redirect('dashboard')
+        else:
+            messages.error(request, "Corrige los errores del formulario.")
+    else:
+        form = InventarioForm(instance=item)
+
+    return render(request, 'inventario/editar_item.html', {
+        'form': form,
+        'item': item
+    })
+@login_required
+def eliminar_item_inventario(request, item_id):
+    if not (request.user.groups.filter(name='Administrador').exists() or request.user.is_superuser):
+        return redirect('dashboard')
+
+    item = get_object_or_404(InventarioItem, id=item_id)
+
+    if request.method == 'POST':
+        item.delete()
+        return redirect('dashboard')
+
+    return render(request, 'inventario/eliminar_item.html', {
+        'item': item
+    })
