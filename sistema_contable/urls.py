@@ -49,4 +49,10 @@ urlpatterns = [
     path('usuarios/solicitud/<int:solicitud_id>/atendida/', views.marcar_solicitud_atendida, name='marcar_solicitud_atendida'),
     path("password/solicitar/", views.solicitar_reset_password, name="solicitar_reset_password"),
 
+    path("movimientos/editar/<str:movimiento_tipo>/<int:movimiento_id>/", views.editar_movimiento, name="editar_movimiento"),
+    path("movimientos/eliminar/<str:movimiento_tipo>/<int:movimiento_id>/", views.eliminar_movimiento, name="eliminar_movimiento"),
+
+    path("inventario/editar/<int:item_id>/", views.editar_item_inventario, name="editar_item"),
+    path("inventario/eliminar/<int:item_id>/", views.eliminar_item_inventario, name="eliminar_item"),
+
 ]
