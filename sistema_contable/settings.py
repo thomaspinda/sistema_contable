@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-snn7cs82j7vxl_hn7m6!l^*=_@)^8_ogs_=j*+h71$zog9yq=g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost', 
+    '127.0.0.1', 
+    'sistema-contable-ten.vercel.app', # El dominio que aparece en tu error
+    '.vercel.app' # Permite cualquier subdominio de Vercel por si cambia en el futuro
+]
 
 
 # Application definition
