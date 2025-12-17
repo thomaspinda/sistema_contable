@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Helvetica; font-size: 12px; }
+        .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; }
+        .info-table { width: 100%; margin: 20px 0; }
+        .items-table { width: 100%; border-collapse: collapse; }
+        .items-table th { background: #0d6efd; color: white; padding: 8px; }
+        .items-table td { border-bottom: 1px solid #ddd; padding: 8px; }
+        .total-box { float: right; width: 250px; margin-top: 20px; background: #f8f9fa; padding: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>COTIZACIÓN DE SERVICIOS</h1>
+        <p>Empresa S.A. | Fecha: {{ cotizacion.fecha|date:"d/m/Y" }}</p>
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td><strong>Cliente:</strong> {{ cotizacion.cliente_nombre }}</td>
+            <td><strong>N° Cotización:</strong> #{{ cotizacion.id }}</td>
+        </tr>
+    </table>
+
+    <h3>Detalle de Materiales</h3>
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Cantidad</th>
+                <th>P. Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cotizacion.items.all %}
+            <tr>
+                <td>{{ item.producto.nombre }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>${{ item.precio_unitario_momento }}</td>
+                <td>${% widthratio item.cantidad 1 item.precio_unitario_momento %}</td> 
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Mano de Obra</h3>
+    <p>
+        Horas Estimadas: {{ cotizacion.horas_estimadas }} x ${{ cotizacion.valor_hora_aplicado }}
+    </p>
+
+    <div class="total-box">
+        <p>Total Materiales: ${{ cotizacion.total_materiales }}</p>
+        
+        <p>Total Mano de Obra: ${% widthratio cotizacion.horas_estimadas 1 cotizacion.valor_hora_aplicado %}</p>
+        
+        <hr>
+        <h2 style="color: #0d6efd;">TOTAL: ${{ cotizacion.total_cotizacion }}</h2>
+    </div>
+</body>
+</html>

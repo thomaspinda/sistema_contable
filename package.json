@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "dj-database-url": "^0.0.1"
+  }
+}

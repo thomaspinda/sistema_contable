@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Helvetica; font-size: 12px; }
+        .box { border: 1px solid #333; padding: 15px; margin-bottom: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
+        .row { margin-bottom: 5px; border-bottom: 1px dashed #ccc; padding: 5px 0; }
+        .label { font-weight: bold; }
+        .val { float: right; }
+        .total { font-size: 16px; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Liquidación de Sueldo</h2>
+        <p>{{ empresa }}</p>
+    </div>
+
+    <div class="box">
+        <p><strong>Empleado:</strong> {{ empleado.first_name }} {{ empleado.last_name }} ({{ empleado.username }})</p>
+        <p><strong>Periodo:</strong> {{ liq.mes_correspondiente }}</p>
+        <p><strong>Fecha de Pago:</strong> {{ liq.fecha_pago|date:"d/m/Y" }}</p>
+    </div>
+
+    <div class="box">
+        <h3>Detalle de Remuneración</h3>
+        
+        <div class="row">
+            <span class="label">Sueldo Base ({{ liq.horas_trabajadas }} hrs x ${{ liq.valor_hora_aplicado }}):</span>
+            <span class="val">$ {% widthratio liq.horas_trabajadas 1 liq.valor_hora_aplicado %}</span>
+        </div>
+        
+        <div class="row">
+            <span class="label">Bonos / Gratificaciones:</span>
+            <span class="val text-success">+ $ {{ liq.bonos }}</span>
+        </div>
+        
+        <div class="row">
+            <span class="label">Descuentos (Adelantos/Faltas):</span>
+            <span class="val text-danger">- $ {{ liq.descuentos }}</span>
+        </div>
+
+        <div class="total">
+            <span class="label">TOTAL A PAGAR (LÍQUIDO):</span>
+            <span class="val">$ {{ liq.total_pagar }}</span>
+        </div>
+    </div>
+
+    <br><br><br>
+    <div style="text-align: center;">
+        _______________________________<br>
+        Firma Conforme Empleado
+    </div>
+</body>
+</html>

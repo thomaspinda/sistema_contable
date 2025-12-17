@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            
+            <div class="card shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">💰 Registrar Pago de Nómina</h4>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-info-circle"></i> <strong>Importante:</strong> 
+                        Al guardar este registro, el sistema calculará el sueldo automáticamente (Horas x Valor Hora del perfil) 
+                        y generará un <strong>Egreso</strong> en el Balance General de inmediato.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Seleccionar Empleado</label>
+                            {{ form.empleado }}
+                            <div class="form-text text-muted">Asegúrate de que el empleado tenga asignado un "Valor Hora" en su perfil.</div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Periodo (Mes/Año)</label>
+                                {{ form.mes_correspondiente }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Horas Trabajadas</label>
+                                {{ form.horas_trabajadas }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-success">Bonos / Gratificación (+)</label>
+                                {{ form.bonos }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-danger">Descuentos / Anticipos (-)</label>
+                                {{ form.descuentos }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">Calcular y Pagar Sueldo</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

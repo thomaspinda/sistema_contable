@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">📋 Generar Nueva Cotización</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" id="cotizacionForm">
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Nombre del Cliente</label>
+                        <input type="text" name="cliente" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Horas Estimadas</label>
+                        <input type="number" step="0.5" name="horas" id="horas_input" class="form-control" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Tu Valor Hora</label>
+                        <input type="text" class="form-control bg-light" value="${{ user.profile.valor_hora }}" readonly>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Descripción del Servicio</label>
+                    <textarea name="descripcion" class="form-control" rows="2" required></textarea>
+                </div>
+
+                <h5 class="mb-3">Materiales</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Producto</th>
+                                <th>Precio Unit.</th>
+                                <th style="width: 15%;">Cantidad</th>
+                                <th>Subtotal</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="materiales_body"></tbody>
+                    </table>
+                </div>
+
+                <button type="button" class="btn btn-outline-success btn-sm mb-4" onclick="agregarFilaMaterial()">
+                    + Agregar Material
+                </button>
+
+                <div class="row justify-content-end">
+                    <div class="col-md-4">
+                        <div class="card bg-light p-3">
+                            <div class="d-flex justify-content-between"><span>Materiales:</span> <span id="label_total_materiales">$0.00</span></div>
+                            <div class="d-flex justify-content-between"><span>Mano de Obra:</span> <span id="label_total_mano">$0.00</span></div>
+                            <hr>
+                            <div class="d-flex justify-content-between fw-bold text-primary"><span>TOTAL:</span> <span id="label_total_final">$0.00</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Generar y Descargar Cotización PDF</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<datalist id="lista_productos">
+    {% for p in productos %}
+        <option value="{{ p.nombre }}" data-id="{{ p.id }}" data-precio="{{ p.precio }}">
+    {% endfor %}
+</datalist>
+
+<script>
+    // Forma segura de pasar el catálogo sin errores de sintaxis en el IDE
+    const catalogoPrecios = {
+        {% for p in productos %}
+            "{{ p.nombre|escapejs }}": {{ p.precio }},
+        {% endfor %}
+    };
+    const valorHoraUsuario = {{ user.profile.valor_hora|default:0 }};
+
+    function agregarFilaMaterial() {
+        const body = document.getElementById('materiales_body');
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>
+                <input type="text" list="lista_productos" class="form-control" oninput="actualizarPrecio(this)" required>
+                <input type="hidden" name="productos[]" class="producto-id">
+            </td>
+            <td><input type="text" class="form-control bg-light precio-unit" value="0" readonly></td>
+            <td><input type="number" name="cantidades[]" class="form-control cantidad-input" min="1" value="1" oninput="recalcularTodo()"></td>
+            <td><span class="subtotal-item">$0.00</span></td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="this.closest('tr').remove(); recalcularTodo();">×</button></td>
+        `;
+        body.appendChild(fila);
+    }
+
+    function actualizarPrecio(input) {
+        const fila = input.closest('tr');
+        const nombre = input.value;
+        const precio = catalogoPrecios[nombre] || 0;
+        
+        const option = document.querySelector(`#lista_productos option[value="${nombre}"]`);
+        if (option) {
+            fila.querySelector('.producto-id').value = option.dataset.id;
+            fila.querySelector('.precio-unit').value = precio;
+        }
+        recalcularTodo();
+    }
+
+    function recalcularTodo() {
+        let totalMat = 0;
+        document.querySelectorAll('#materiales_body tr').forEach(fila => {
+            const p = parseFloat(fila.querySelector('.precio-unit').value) || 0;
+            const c = parseFloat(fila.querySelector('.cantidad-input').value) || 0;
+            const sub = p * c;
+            totalMat += sub;
+            fila.querySelector('.subtotal-item').innerText = `$${sub.toFixed(2)}`;
+        });
+
+        const hrs = parseFloat(document.getElementById('horas_input').value) || 0;
+        const totalMano = hrs * valorHoraUsuario;
+        
+        document.getElementById('label_total_materiales').innerText = `$${totalMat.toFixed(2)}`;
+        document.getElementById('label_total_mano').innerText = `$${totalMano.toFixed(2)}`;
+        document.getElementById('label_total_final').innerText = `$${(totalMat + totalMano).toFixed(2)}`;
+    }
+
+    document.getElementById('horas_input').addEventListener('input', recalcularTodo);
+    document.addEventListener('DOMContentLoaded', agregarFilaMaterial);
+</script>
+{% endblock %}

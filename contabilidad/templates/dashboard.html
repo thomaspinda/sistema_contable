@@ -4,15 +4,37 @@
     <meta charset="UTF-8">
     <title>Dashboard | Sistema Contable</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Estilos para el scroll interno de las tablas */
+        .tabla-scroll-container {
+            max-height: 400px; /* Altura máxima de la tabla */
+            overflow-y: auto;  /* Scroll vertical automático */
+        }
+        .tabla-scroll-audit {
+            max-height: 300px; /* Altura un poco menor para la auditoría */
+            overflow-y: auto;
+        }
+        /* Clase para fijar el encabezado */
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 1020; /* Asegura que quede por encima del contenido */
+            background-color: #e9ecef; /* Color de fondo para que no sea transparente */
+        }
+        /* Ajuste fino para los bordes de la tabla scrollable */
+        .table-responsive {
+            border-bottom: 1px solid #dee2e6;
+        }
+    </style>
 </head>
 <body class="bg-light">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
-        <div class="container">
-            <a class="navbar-brand" href="#">Empresa S.A.</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4 shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="#">Empresa S.A.</a>
             <div class="d-flex text-white align-items-center">
                 <span class="me-3">Hola, {{ nombre_usuario }}</span>
-                <form action="{% url 'logout' %}" method="post">
+                <form action="{% url 'logout' %}" method="post" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-light btn-sm">Cerrar Sesión</button>
                 </form>
@@ -20,151 +42,245 @@
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container-fluid px-4">
+        
+        {% if messages %}
+            <div class="row mb-3">
+                <div class="col-12">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
         {% if es_admin %}
-        <div class="card mb-4 border-primary">
-            <div class="card-header bg-primary text-white">Administración de Personal</div>
-            <div class="card-body">
-                <h5 class="card-title">Gestión de Usuarios</h5>
-                <p class="card-text">Registre nuevos empleados y asigne sus roles (Contador o Almacenista).</p>
-                <a href="{% url 'crear_empleado' %}" class="btn btn-primary">Registrar Nuevo Empleado</a>
-                <a href="{% url 'lista_usuarios' %}" class="btn btn-outline-primary">Ver Usuarios Registrados</a>
-
+        <div class="row mb-4">
+<div class="col-md-4">
+    <div class="card border-primary h-100 shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">Personal</div>
+        <div class="card-body">
+            <p class="card-text small">Gestión de recursos humanos.</p>
+            <div class="d-grid gap-2">
+                <a href="{% url 'crear_empleado' %}" class="btn btn-sm btn-primary">
+                    Nuevo Usuario Sistema
+                </a>
+                
+                <a href="{% url 'crear_trabajador_manual' %}" class="btn btn-sm btn-secondary">
+                    Nuevo Trabajador Manual
+                </a>
+                
+                <hr class="my-1">
+                
+                <a href="{% url 'registrar_sueldo' %}" class="btn btn-sm btn-success">
+                    Pagar Sueldos
+                </a>
+                
+                <a href="{% url 'lista_usuarios' %}" class="btn btn-sm btn-outline-primary">
+                    Ver Todo el Personal
+                </a>
             </div>
         </div>
-        <div class="card border-warning mb-4">
-    <div class="card-header bg-warning text-dark">
-        Solicitudes de Recuperación de Contraseña
     </div>
-    <div class="card-body">
-
-        {% if solicitudes %}
-            <ul class="list-group">
-                {% for s in solicitudes %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ s.usuario.username }} 
-                        <span class="badge bg-secondary">{{ s.fecha_solicitud }}</span>
-
-                        <form method="post" action="{% url 'marcar_solicitud_atendida' s.id %}">
-                            {% csrf_token %}
-                            <button class="btn btn-sm btn-success">Marcar como atendida</button>
-                        </form>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-muted">No hay solicitudes pendientes.</p>
-        {% endif %}
-    </div>
-    
 </div>
-<div class="card border-secondary mb-4 shadow-sm">
-    <div class="card-header bg-secondary text-white">
-        <h5 class="mb-0">Historial Reciente de Operaciones</h5>
-    </div>
-    <div class="table-responsive">
-    <table class="table table-striped table-hover mb-0 align-middle">
-        <thead class="table-light">
-            <tr>
-                <th>Tipo</th>
-                <th>Detalle / Descripción</th> <th class="text-end">Monto / Cantidad</th> <th>Realizado por</th>
-                <th>Fecha</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for mov in historial %}
-            <tr>
-                <td>
-                    <span class="badge bg-{{ mov.css_class }}">
-                        {{ mov.tipo_accion }}
-                    </span>
-                </td>
+            <div class="col-md-4">
+                <div class="card border-info h-100 shadow-sm">
+                    <div class="card-header bg-info text-white fw-bold">Clientes</div>
+                    <div class="card-body">
+                        <p class="card-text small">Base de datos de clientes.</p>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'registrar_cliente' %}" class="btn btn-sm btn-info text-white">Nuevo Cliente</a>
+                            <a href="{% url 'lista_clientes' %}" class="btn btn-sm btn-outline-info">Ver Directorio</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                <td>
-                    {{ mov.columna_detalle|default:"Sin detalle" }}
-                </td>
-
-                <td class="text-end fw-bold">
-                    {{ mov.columna_valor }}
-                </td>
-
-                <td>
-                    {% if mov.creado_por %}
-                        <small>{{ mov.creado_por_nombre_fijo }}</small>
-                    {% else %}
-                        <span class="text-muted"><small>Sistema</small></span>
-                    {% endif %}
-                </td>
-
-                <td>
-                    <small class="text-muted">{{ mov.fecha_orden|date:"d/m/Y" }}</small>
-                </td>
-<td>
-    <a href="{% url 'editar_movimiento' mov.tipo_accion|lower mov.id %}" class="btn btn-sm btn-warning">Editar</a>
-    <a href="{% url 'eliminar_movimiento' mov.tipo_accion|lower mov.id %}" class="btn btn-sm btn-danger">Eliminar</a>
-    
-</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center py-3 text-muted">
-                    No hay movimientos recientes registrados.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-</div>
+            <div class="col-md-4">
+                <div class="card border-warning h-100 shadow-sm">
+                    <div class="card-header bg-warning text-dark fw-bold">
+                        Generador de Documentos
+                    </div>
+                    <div class="card-body">
+                         <a href="{% url 'generar_balance_pdf' %}" target="_blank" class="btn btn-sm btn-warning text-dark fw-bold">
+                            Reporte Balance PDF
+                        </a>
+                        <a href="{% url 'generar_cotizacion' %}" class="btn btn-sm btn-outline-primary">
+                             Nueva Cotización
+                        </a>       
+                    </div>
+                </div>
+            </div>
+        </div>
         {% endif %}
 
+        <h3 class="mb-3 text-secondary">Panel de Control General</h3>
+        
         <div class="row">
-            {% if es_contador or es_admin %}
-            <div class="col-md-6 mb-3">
-                <div class="card h-100 border-success">
-                    <div class="card-header bg-success text-white">Contabilidad</div>
-                    <div class="card-body">
-                        <h5 class="card-title">Ingresos y Egresos</h5>
-                        <p class="card-text">Gestione el flujo de caja de la empresa.</p>
-                        <div class="d-grid gap-2">
-
-                            <a href="{% url 'ingresos_page' %}" class="btn btn-outline-success">
-                                Registrar Ingreso
-                            </a>
-
-                            <a href="{% url 'egresos_page' %}" class="btn btn-outline-danger">
-                                Registrar Egreso
-                            </a>
-
+            
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fs-6">Últimas Operaciones</h5>
+                        <div>
+                            {% if es_contador or es_admin %}
+                            <a href="{% url 'ingresos_page' %}" class="btn btn-sm btn-light text-primary fw-bold me-1" title="Registrar Venta">+ Ingreso</a>
+                            <a href="{% url 'egresos_page' %}" class="btn btn-sm btn-light text-danger fw-bold" title="Registrar Compra">- Egreso</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive tabla-scroll-container">
+                            <table class="table table-striped table-hover mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tipo</th>
+                                        <th>Titulo</th>
+                                        <th>Descripcion</th>
+                                        <th>Monto</th>
+                                        <th>Usuario</th>
+                                        {% if es_admin %}<th class="text-center">Acciones</th>{% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for op in ultimas_operaciones %}
+                                    <tr>
+                                        <td>{{ op.fecha|date:"d/m/y" }}</td>
+                                        <td>
+                                            {% if op.tipo == 'Ingreso' %}
+                                                <span class="badge bg-success">Ingreso</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Egreso</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ op.titulo }}</td>
+                                        <td>{{ op.descripcion }}</td>
+                                        <td class="fw-bold text-end pe-4">${{ op.monto_visual|floatformat:2 }}</td>
+                                        <td>{{ op.creado_por.username }}</td>
+                                        
+                                        {% if es_admin %}
+                                        <td class="text-center">
+                                            {% if op.tipo == 'Ingreso' %}
+                                                <a href="{% url 'editar_movimiento' 'ingreso' op.id %}" class="btn btn-outline-primary btn-sm py-0 border-0" title="Editar">✏️</a>
+                                                <a href="{% url 'eliminar_movimiento' 'ingreso' op.id %}" class="btn btn-outline-danger btn-sm py-0 border-0" title="Eliminar">🗑️</a>
+                                            {% else %}
+                                                <a href="{% url 'editar_movimiento' 'egreso' op.id %}" class="btn btn-outline-primary btn-sm py-0 border-0" title="Editar">✏️</a>
+                                                <a href="{% url 'eliminar_movimiento' 'egreso' op.id %}" class="btn btn-outline-danger btn-sm py-0 border-0" title="Eliminar">🗑️</a>
+                                            {% endif %}
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="text-center p-3 text-muted">No hay movimientos registrados.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
 
-            {% if es_almacenista or es_admin %}
-            <div class="col-md-6 mb-3">
-                <div class="card h-100 border-warning">
-                    <div class="card-header bg-warning text-dark">Inventario</div>
-                    <div class="card-body">
-                        <h5 class="card-title">Gestión de Almacén</h5>
-                        <p class="card-text">Control de stock y registro de nuevos artículos.</p>
-                        <div class="d-grid gap-2">
-
-                            <a href="{% url 'inventario_page' %}" class="btn btn-outline-dark">
-                                Registrar Nuevo Item
-                            </a>
-
-
-
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fs-6">Inventario</h5>
+                        {% if es_almacenista or es_admin %}
+                        <a href="{% url 'crear_item_catalogo' %}" class="btn btn-sm btn-outline-light">Agregar item</a>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="card-body p-0">
+                        <div class="table-responsive tabla-scroll-container">
+                            <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+                                <thead class="table-secondary sticky-top">
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-center">Stock</th>
+                                        <th class="text-end pe-3">Valor Unit.</th>
+                                        {% if es_admin %}<th class="text-center">Acciones</th>{% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in inventario %}
+                                    <tr>
+                                        <td class="fw-bold text-primary">{{ item.nombre }}</td>
+                                        <td class="text-center">
+                                            {% if item.cantidad == 0 %}
+                                                <span class="badge bg-danger">0</span>
+                                            {% elif item.cantidad < 10 %}
+                                                <span class="badge bg-warning text-dark">{{ item.cantidad }}</span>
+                                            {% else %}
+                                                <span class="badge bg-success">{{ item.cantidad }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end pe-3">${{ item.precio|floatformat:2 }}</td>
+                                        
+                                        {% if es_admin %}
+                                        <td class="text-center">
+                                            <a href="{% url 'editar_movimiento' 'inventario' item.id %}" class="btn btn-outline-dark btn-sm py-0 border-0" title="Editar">✏️</a>
+                                            <a href="{% url 'eliminar_movimiento' 'inventario' item.id %}" class="btn btn-outline-danger btn-sm py-0 border-0" title="Eliminar">🗑️</a>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="text-center p-3 text-muted">El inventario está vacío.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
+
+        </div> {% if es_admin and auditorias %}
+        <div class="row mt-2 mb-5">
+            <div class="col-12">
+                <div class="card border-secondary shadow-sm">
+                    <div class="card-header bg-secondary text-white small py-1">
+                        <strong>Bitácora de registros</strong>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive tabla-scroll-audit">
+                            <table class="table table-sm table-bordered mb-0" style="font-size: 0.8rem;">
+                                <thead class="bg-light sticky-top">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Usuario</th>
+                                        <th>Acción</th>
+                                        <th>Referencia</th>
+                                        <th>Detalle Previo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in auditorias %}
+                                    <tr>
+                                        <td style="width: 120px;">{{ log.fecha_cambio|date:"d/m/Y H:i" }}</td>
+                                        <td class="fw-bold">{{ log.usuario.username }}</td>
+                                        <td>
+                                            <span class="badge {% if log.accion == 'ELIMINACION' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                                                {{ log.get_accion_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ log.tipo_movimiento }} #{{ log.id_original }}</td>
+                                        <td class="text-muted text-wrap">{{ log.detalles_anteriores|truncatechars:100 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        {% endif %}
+
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

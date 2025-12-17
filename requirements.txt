@@ -3,3 +3,4 @@ psycopg2-binary
 whitenoise
 dj-database-url
 django-widget-tweaks
+xhtml2pdf

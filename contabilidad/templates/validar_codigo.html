@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h4>Verificación</h4>
+                <p>Ingresa el código enviado a tu correo</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="text" name="codigo" class="form-control text-center mb-3" maxlength="6" style="font-size: 24px; letter-spacing: 10px;" required>
+                    <button type="submit" class="btn btn-primary w-100">Validar Código</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

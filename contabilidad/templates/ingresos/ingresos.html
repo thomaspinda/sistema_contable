@@ -1,86 +1,130 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Registro de Ingresos</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
+{% extends 'base.html' %}
+{% load widget_tweaks %}
 
-<body>
-    {% load widget_tweaks %}
-    
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-lg-8 offset-lg-2">
+{% block title %}Registrar Ingreso{% endblock %}
 
-                <h1 class="mb-4 text-primary">Nuevo Registro de Ingreso</h1>
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                <div class="card p-4 mb-5 shadow-sm">
+            <div class="card shadow border-primary mb-5">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Nuevo Ingreso (Venta)</h4>
+                    <a href="{% url 'registrar_cliente' %}" class="btn btn-sm btn-light text-primary fw-bold">
+                        + Nuevo Cliente
+                    </a>
+                </div>
+                
+                <div class="card-body p-4">
                     <form method="post">
                         {% csrf_token %}
-                        {% for field in form %}
-                            <div class="mb-3">
-                                <label class="form-label">{{ field.label }}</label>
-                                {{ field|add_class:"form-control" }}
+                        
+                        <div class="row">
+                            {% for field in form %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-secondary">{{ field.label }}</label>
+                                    {{ field|add_class:"form-control" }}
+                                    {% if field.errors %}
+                                        <div class="text-danger small">{{ field.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
 
-                                {% for error in field.errors %}
-                                    <div class="invalid-feedback d-block">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                        <button class="btn btn-primary mt-3">Guardar Ingreso</button>
+                        <hr class="my-4">
+
+                        <h5 class="mb-3 text-primary">Detalle de Productos</h5>
+                        <div class="table-responsive mb-3">
+                            <table class="table table-bordered table-hover" id="tablaProductos">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>Producto del Inventario</th>
+                                        <th style="width: 150px;">Cantidad</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    </tbody>
+                            </table>
+                        </div>
+                        
+                        <button type="button" class="btn btn-outline-primary btn-sm mb-4" onclick="agregarFila()">
+                            + Agregar Producto
+                        </button>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm">Guardar Ingreso</button>
+                            <a href="{% url 'dashboard' %}" class="btn btn-link text-muted">Cancelar</a>
+                        </div>
                     </form>
                 </div>
-
-                <hr>
-
-                <h2 class="mb-3 text-secondary">Ingresos Registrados</h2>
-
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover caption-top">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>Título</th>
-                                <th>Monto</th>
-                                <th>Fecha</th>
-                                <th>Registrado por</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for ingreso in ingresos %}
-                                <tr>
-                                    <td>{{ ingreso.titulo }}</td>
-                                    <td><span class="badge bg-success">${{ ingreso.monto }}</span></td>
-                                    
-                                    <td>{{ ingreso.fecha }}</td>
-                                    <td>{{ ingreso.creado_por }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr><td colspan="4" class="text-center text-muted">No hay ingresos registrados.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <hr class="mt-4">
-
-                <div class="d-flex justify-content-start gap-3 mb-5">
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm">Volver al Dashboard</a>
-                </div>
-
             </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 text-secondary">Historial Reciente</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Concepto</th>
+                                    <th>Cliente</th>
+                                    <th>Monto</th>
+                                    <th>Usuario</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ingreso in ingresos %}
+                                    <tr>
+                                        <td>{{ ingreso.fecha|date:"d/m/Y" }}</td>
+                                        <td>{{ ingreso.titulo }}</td>
+                                        <td>{{ ingreso.cliente_link|default:"-" }}</td>
+                                        <td><span class="badge bg-success">${{ ingreso.monto }}</span></td>
+                                        <td class="small text-muted">{{ ingreso.creado_por.username }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="5" class="text-center py-3 text-muted">No hay ingresos registrados recientemente.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<script>
+    function agregarFila() {
+        let tbody = document.querySelector('#tablaProductos tbody');
+        let tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+            <td>
+                <select name="producto_id[]" class="form-select" required>
+                    <option value="">-- Seleccionar Producto --</option>
+                    {% for p in productos %}
+                        <option value="{{ p.id }}">{{ p.nombre }} (Disp: {{ p.cantidad }})</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <input type="number" name="cantidad[]" class="form-control" min="1" value="1" required>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-sm border-0" onclick="this.closest('tr').remove()">
+                    <i class="bi bi-trash"></i> ×
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
+    // Agregar una fila inicial
+    document.addEventListener('DOMContentLoaded', agregarFila);
+</script>
+{% endblock %}
