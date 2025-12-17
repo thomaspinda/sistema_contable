@@ -2,5 +2,6 @@ Django>=5.0
 psycopg2-binary
 whitenoise
 dj-database-url
-django-widget-tweaks
-xhtml2pdf
+xhtml2pdf==0.2.16
+reportlab==4.2.5
+django-widget-tweaks==1.5.0
